@@ -11,7 +11,8 @@ Then you need to create a virtual environment and install the basic dependencies
 
 ```
 cd Checkers_Group3
-python setup.py
+python setup.py             # For windows
+python3 setup.py            # For Mac/Linux
 ```
 
 ## To Run the Project
