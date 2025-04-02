@@ -99,7 +99,7 @@ class CheckersGUI:
         else:
             move = next((m for m in self.valid_moves if m[1] == (x, y)), None)
             if move:
-                self.state = self.game.result(self.state, move, update_counter=True)
+                self.state = self.game.result(self.state, move, update_counter=False)
                 self.update_board()
                 self.clear_selection()
                 self.check_game_status()
@@ -132,7 +132,7 @@ class CheckersGUI:
 
     def check_game_status(self):
         """Check if the game has ended and show the winner."""
-        if self.game.terminal_test(self.state, update_counter=False):
+        if self.game.terminal_test(self.state, update_counter=True):
             self.display_winner()
 
     def display_winner(self):
@@ -155,13 +155,13 @@ class CheckersGUI:
 
     def ai_move(self):
         """AI selects and plays a move."""
-        if self.game.terminal_test(self.state, update_counter=False):  # Stop AI if game over
+        if self.game.terminal_test(self.state, update_counter=True):  # Stop AI if game over
             return
     
         ai_player = self.get_current_player()
         if ai_player:
             move = ai_player(self.game, self.state)
-            self.state = self.game.result(self.state, move, update_counter=True)
+            self.state = self.game.result(self.state, move, update_counter=False)
             self.update_board()
             self.check_game_status()
     
