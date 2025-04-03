@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import messagebox
 from games4e import *
 import random
-from checkers import Checkers  # Import your Checkers game class
+from checkers import Checkers
 
 # Dictionary mapping player choices to functions in games4e
 players = {
