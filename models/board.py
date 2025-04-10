@@ -1,13 +1,17 @@
-from models.piece import Piece
 import copy
 
-class Board:
-    def __init__(self):
+from models.piece import Piece
+
+class Board():
+    def __init__(self, players, to_move):
         # Create an 8x8 grid of None
+        self.to_move = to_move
         self.grid = [[None for _ in range(8)] for _ in range(8)]
-        self.setup(["W", "B"])  # Initialize the board with two players
+        self.players = players
+        self.pieces = {players[0]: [], players[1]: []}
+        self.setup()  # Initialize the board with two players
     
-    def setup(self, players):
+    def setup(self):
         """
         Place the pieces on the board.
         For this implementation:
@@ -15,21 +19,33 @@ class Board:
           - Pieces for players[0] are placed in the bottom three rows.
         A counter is used to generate unique IDs for each Piece.
         """
-        counters = {players[0]: 1, players[1]: 1}
+        counters = {self.players[0]: 1, self.players[1]: 1}
         # Set up pieces for players[1] (top rows).
         for row in range(3):
             for col in range(8):
                 if (row + col) % 2 == 1:
-                    piece = Piece(players[1], counters[players[1]], (row, col))
-                    counters[players[1]] += 1
+                    piece = Piece(self.players[1], counters[self.players[1]], (row, col))
+                    self.pieces[self.players[1]].append(piece)
+                    counters[self.players[1]] += 1
                     self.grid[row][col] = piece
         # Set up pieces for players[0] (bottom rows).
         for row in range(5, 8):
             for col in range(8):
                 if (row + col) % 2 == 1:
-                    piece = Piece(players[0], counters[players[0]], (row, col))
-                    counters[players[0]] += 1
+                    piece = Piece(self.players[0], counters[self.players[0]], (row, col))
+                    self.pieces[self.players[0]].append(piece)
+                    counters[self.players[0]] += 1
                     self.grid[row][col] = piece
+
+    def get_piece_by_id(self, piece_id):
+        """
+        Return the piece object corresponding to the given ID.
+        """
+        for player in self.pieces.values():
+            for piece in player:
+                if piece.id == piece_id:
+                    return piece
+        return None
 
     def copy(self):
         """
@@ -37,21 +53,35 @@ class Board:
         """
         return copy.deepcopy(self)
     
-    def print_board(self, players):
+    def print_board(self):
         """
         Print the board in a readable format.
         Empty squares are denoted by '.', while pieces use a letter:
           - Lowercase for normal pieces.
           - Uppercase for kings.
         """
+        line_num = 0
+        horizontal_line = space(5) + "+-----" * 8 + "+"
+        print(horizontal_line)
+
         for row in self.grid:
-            line = ""
+            line = f"{line_num}" + space(3)
             for cell in row:
+                line += " | "
                 if cell is None:
-                    line += ". "
+                    line += space(3)
                 else:
-                    if cell.player == players[0]:
-                        line += ("W " if cell.is_king else "w ")
-                    else:
-                        line += ("B " if cell.is_king else "b ")
-            print(line)
+                    line += cell.id.upper() if cell.is_king else cell.id
+            print(line + " |")
+            print(horizontal_line)
+            line_num += 1
+        
+        s = space(5)
+        print(f"\n{space(8)}0{s}1{s}2{s}3{s}4{s}5{s}6{s}7\n")
+
+def space(num):
+    """
+    Return a string of spaces.
+    Used for formatting the board output.
+    """
+    return " " * num

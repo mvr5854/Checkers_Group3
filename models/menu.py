@@ -6,6 +6,7 @@ class Option(Enum):
     HUMAN_VS_MCTS_AI = "Human vs MCTS AI"
     HUMAN_VS_HUMAN = "Human vs Human"
     MINIMAX_AI_VS_MCTS_AI = "Minimax AI vs MCTS AI"
+    QUIT = "Quit"
 
 class Menu:
     """Class for displaying the menu and handling user input."""
@@ -24,8 +25,9 @@ class Menu:
         """Get user choice from the menu."""
         while True:
             try:
-                choice = int(input("Select game mode (1-4): ")) - 1
-                if 0 <= choice < len(self.options):
+                choice_num = len(self.options)
+                choice = int(input(f"Select game mode (1-{choice_num}): ")) - 1
+                if 0 <= choice < choice_num:
                     return self.options[choice]
                 else:
                     print("Invalid choice. Please try again.")
