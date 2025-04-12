@@ -1,6 +1,6 @@
 import copy
 
-from models.piece import Piece
+from piece import Piece
 
 class Board():
     def __init__(self, players, to_move):

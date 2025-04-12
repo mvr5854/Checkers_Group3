@@ -1,6 +1,8 @@
 import numpy as np
 import random
 
+from io_helper import IOHelper
+
 
 class MCT_Node:
     """Node in the Monte Carlo search tree, keeps track of the children states."""
@@ -13,7 +15,7 @@ class MCT_Node:
 def ucb(n, C=1.4):
     return np.inf if n.N == 0 else n.U / n.N + C * np.sqrt(np.log(n.parent.N) / n.N)
 
-def monte_carlo_tree_search(state, game, N=1000):
+def monte_carlo_tree_search(game, state, N=1000):
     def select(n):
         """select a leaf node in the tree"""
         if n.children:
@@ -23,15 +25,15 @@ def monte_carlo_tree_search(state, game, N=1000):
 
     def expand(n):
         """expand the leaf node by adding all its children states"""
-        if not n.children and not game.terminal_test(n.state):
+        if not n.children and not game.is_terminal(n.state):
             n.children = {MCT_Node(state=game.result(n.state, action), parent=n): action
                           for action in game.actions(n.state)}
         return select(n)
 
     def simulate(game, state):
         """simulate the utility of current state by random picking a step"""
-        player = game.to_move(state)
-        while not game.terminal_test(state):
+        player = state.to_move
+        while not game.is_terminal(state):
             action = random.choice(list(game.actions(state)))
             state = game.result(state, action)
         v = game.utility(state, player)
@@ -98,11 +100,11 @@ def query_player(game, state):
     """Make a move by querying standard input."""
     print("current state:")
     game.display(state)
-    print("available moves: {}".format(game.actions(state)))
-    print("")
+    io_helper = IOHelper(game.actions(state))
+    io_helper.display_menu(max_per_line=3)
     move = None
     if game.actions(state):
-        move_string = input('Your move? ')
+        move_string = str(io_helper.read_user_input())
         try:
             move = eval(move_string)
         except NameError:

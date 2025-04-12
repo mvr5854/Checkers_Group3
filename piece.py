@@ -33,7 +33,7 @@ class Piece:
         return (self.id, y, x)
 
     def move(self, new_position):   
-        self.cx, self.cy = new_position
+        self.cy, self.cx = new_position
         self.is_become_king()
 
     def __str__(self):
