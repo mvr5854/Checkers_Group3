@@ -15,26 +15,31 @@ class MCT_Node:
 def ucb(n, C=1.4):
     return np.inf if n.N == 0 else n.U / n.N + C * np.sqrt(np.log(n.parent.N) / n.N)
 
-def monte_carlo_tree_search(game, state, N=1000):
+def monte_carlo_tree_search(game, state, N=300):
     def select(n):
         """select a leaf node in the tree"""
         if n.children:
             return select(max(n.children.keys(), key=ucb))
         else:
             return n
-
+    
     def expand(n):
-        """expand the leaf node by adding all its children states"""
         if not n.children and not game.is_terminal(n.state):
+            if n.actions is None:
+                n.actions = game.actions(n.state)
             n.children = {MCT_Node(state=game.result(n.state, action), parent=n): action
-                          for action in game.actions(n.state)}
+                for action in n.actions}
         return select(n)
-
-    def simulate(game, state):
-        """simulate the utility of current state by random picking a step"""
+    
+    def simulate(game, state, max_depth=20):
         player = state.to_move
-        while not game.is_terminal(state):
-            action = random.choice(list(game.actions(state)))
+        for _ in range(max_depth):
+            if game.is_terminal(state):
+                break
+            actions = game.actions(state)
+            if not actions:
+                break
+            action = random.choice(actions)
             state = game.result(state, action)
         v = game.utility(state, player)
         return -v
