@@ -2,6 +2,7 @@ import copy
 
 from piece import Piece
 
+
 class Board():
     def __init__(self, players, to_move):
         # Create an 8x8 grid of None
@@ -65,7 +66,7 @@ class Board():
         print(horizontal_line)
 
         for row in self.grid:
-            line = f"{line_num}" + space(3)
+            line = f"{line_num+1}" + space(3)
             for cell in row:
                 line += " | "
                 if cell is None:
@@ -77,7 +78,7 @@ class Board():
             line_num += 1
         
         s = space(5)
-        print(f"\n{space(8)}0{s}1{s}2{s}3{s}4{s}5{s}6{s}7\n")
+        print(f"\n{space(8)}A{s}B{s}C{s}D{s}E{s}F{s}G{s}H\n")
 
 def space(num):
     """

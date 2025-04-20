@@ -1,6 +1,39 @@
 import sys
 from enum import Enum
 
+def get_cell_mapping(is_reverse=False):
+    """Return the cell mapping dictionary."""
+    cell_mapping = {
+        "A": 0,
+        "B": 1,
+        "C": 2,
+        "D": 3,
+        "E": 4,
+        "F": 5,
+        "G": 6,
+        "H": 7
+    }
+    if is_reverse:
+        return {v: k for k, v in cell_mapping.items()}
+    return cell_mapping
+
+def coordinate_to_cell(move):
+    """Convert a coordinate to a cell on the board."""
+    cell_mapping = get_cell_mapping(is_reverse=True)
+    id, row, col = move
+    cell_col = cell_mapping[col]
+    cell_row = int(row) + 1
+    cell = f"{cell_col}{cell_row}"
+    return (id, cell)
+
+def cell_to_coordinate(move):
+    """Convert a cell on the board to a coordinate."""
+    cell_mapping = get_cell_mapping()
+    id, cell = move
+    row = int(cell[1]) - 1
+    col = cell_mapping[cell[0]]
+    return (id, row, col)
+
 class IOHelper:
     """Base class for handling input and output operations."""
     def __init__(self, options):
