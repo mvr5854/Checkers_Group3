@@ -9,6 +9,7 @@ class Board():
         self.to_move = to_move
         self.grid = [[None for _ in range(8)] for _ in range(8)]
         self.players = players
+        self.forced_piece = None
         self.pieces = {players[0]: [], players[1]: []}
         self.setup()  # Initialize the board with two players
     

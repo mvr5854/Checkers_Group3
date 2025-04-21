@@ -1,5 +1,8 @@
 import numpy as np
 import random
+import math
+import functools
+cache = functools.lru_cache(10**6)
 
 from io_helper import IOHelper, cell_to_coordinate, coordinate_to_cell
 
@@ -66,11 +69,66 @@ def monte_carlo_tree_search(game, state, N=300):
 
     return root.children.get(max_state)
 
+def cache1(function):
+    "Like lru_cache(None), but only considers the first argument of function."
+    cache = {}
+    def wrapped(x, *args):
+        if x not in cache:
+            cache[x] = function(x, *args)
+        return cache[x]
+    return wrapped
+
 # Search algorithm: Minimax with Alpha-Beta Pruning
+# def cutoff_depth(d):
+#     """A cutoff function that searches to depth d."""
+#     return lambda game, state, depth: depth > d
+
+# def minimax_search(game, state, cutoff=cutoff_depth(6), h=lambda s, p: 0):
+#     """Search game to determine best action; use alpha-beta pruning.
+#     As in [Figure 5.7], this version searches all the way to the leaves."""
+
+#     infinity = math.inf
+#     player = state.to_move
+
+#     @cache1
+#     def max_value(state, alpha, beta, depth):
+#         if game.is_terminal(state):
+#             return game.utility(state, player), None
+#         if cutoff(game, state, depth):
+#             return h(state, player), None
+#         v, move = -infinity, None
+#         for a in game.actions(state):
+#             v2, _ = min_value(game.result(state, a), alpha, beta, depth+1)
+#             if v2 > v:
+#                 v, move = v2, a
+#                 alpha = max(alpha, v)
+#             if v >= beta:
+#                 return v, move
+#         return v, move
+
+#     @cache1
+#     def min_value(state, alpha, beta, depth):
+#         if game.is_terminal(state):
+#             return game.utility(state, player), None
+#         if cutoff(game, state, depth):
+#             return h(state, player), None
+#         v, move = +infinity, None
+#         for a in game.actions(state):
+#             v2, _ = max_value(game.result(state, a), alpha, beta, depth + 1)
+#             if v2 < v:
+#                 v, move = v2, a
+#                 beta = min(beta, v)
+#             if v <= alpha:
+#                 return v, move
+#         return v, move
+
+#     _, move = max_value(state, -infinity, +infinity, 0)
+#     return move
+
 def minimax_search(game, state, depth=3, maximizing_player=True):
     def minimax(state, depth, alpha, beta, maximizing_player):
         if game.is_terminal(state) or depth == 0:
-            return game.utility(state, state.to_move)
+            return evaluate_state(state, state.to_move)
 
         if maximizing_player:
             max_eval = float('-inf')
@@ -91,7 +149,6 @@ def minimax_search(game, state, depth=3, maximizing_player=True):
                     break  # Prune
             return min_eval
 
-    # Choose the best move
     best_score = float('-inf')
     best_move = None
     for move in game.actions(state):
@@ -100,6 +157,45 @@ def minimax_search(game, state, depth=3, maximizing_player=True):
             best_score = score
             best_move = move
     return best_move
+
+
+# Heuristic Evaluation Function
+def evaluate_state(state, player):
+    board = state.grid
+    score = 0
+
+    for row in board:
+        for piece in row:
+            if piece is not None:
+                mult = 1 if piece.player == player else -1
+                score += mult * piece_value(piece)
+
+    return score
+
+
+def piece_value(piece):
+    val = 1
+
+    # Heuristic 1: King bonus
+    if piece.is_king:
+        val += 1.5
+
+    # Heuristic 2: Center control
+    if 2 <= piece.cy <= 5 and 2 <= piece.cx <= 5:
+        val += 0.3
+
+    # Heuristic 3: Promotion potential
+    if piece.player == "w":
+        val += 0.2 * (7 - piece.cy)  # closer to becoming king
+    elif piece.player == "b":
+        val += 0.2 * piece.cy
+
+    # Heuristic 4: Edge safety bonus
+    if piece.cx == 0 or piece.cx == 7:
+        val += 0.2
+
+    return val
+
 
 def query_player(game, state):
     """Make a move by querying standard input."""
