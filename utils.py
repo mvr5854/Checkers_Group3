@@ -78,57 +78,92 @@ def cache1(function):
         return cache[x]
     return wrapped
 
-# Search algorithm: Minimax with Alpha-Beta Pruning
-# def cutoff_depth(d):
-#     """A cutoff function that searches to depth d."""
-#     return lambda game, state, depth: depth > d
-
-# def minimax_search(game, state, cutoff=cutoff_depth(6), h=lambda s, p: 0):
-#     """Search game to determine best action; use alpha-beta pruning.
-#     As in [Figure 5.7], this version searches all the way to the leaves."""
-
-#     infinity = math.inf
-#     player = state.to_move
-
-#     @cache1
-#     def max_value(state, alpha, beta, depth):
-#         if game.is_terminal(state):
-#             return game.utility(state, player), None
-#         if cutoff(game, state, depth):
-#             return h(state, player), None
-#         v, move = -infinity, None
-#         for a in game.actions(state):
-#             v2, _ = min_value(game.result(state, a), alpha, beta, depth+1)
-#             if v2 > v:
-#                 v, move = v2, a
-#                 alpha = max(alpha, v)
-#             if v >= beta:
-#                 return v, move
-#         return v, move
-
-#     @cache1
-#     def min_value(state, alpha, beta, depth):
-#         if game.is_terminal(state):
-#             return game.utility(state, player), None
-#         if cutoff(game, state, depth):
-#             return h(state, player), None
-#         v, move = +infinity, None
-#         for a in game.actions(state):
-#             v2, _ = max_value(game.result(state, a), alpha, beta, depth + 1)
-#             if v2 < v:
-#                 v, move = v2, a
-#                 beta = min(beta, v)
-#             if v <= alpha:
-#                 return v, move
-#         return v, move
-
-#     _, move = max_value(state, -infinity, +infinity, 0)
-#     return move
-
 def minimax_search(game, state, depth=3, maximizing_player=True):
-    def minimax(state, depth, alpha, beta, maximizing_player):
+    def minimax(state, depth, alpha, beta, maximizing_player, player):
         if game.is_terminal(state) or depth == 0:
-            return evaluate_state(state, state.to_move)
+            return evaluate_state(state, player)
+
+        if maximizing_player:
+            max_eval = float('-inf')
+            for move in game.actions(state):
+                eval = minimax(game.result(state, move), depth-1, alpha, beta, False, player)
+                max_eval = max(max_eval, eval)
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break  # Prune
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for move in game.actions(state):
+                eval = minimax(game.result(state, move), depth-1, alpha, beta, True, player)
+                min_eval = min(min_eval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break  # Prune
+            return min_eval
+
+    best_score = float('-inf')
+    best_move = None
+    for move in game.actions(state):
+        score = minimax(game.result(state, move), depth, float('-inf'), float('inf'), maximizing_player, state.to_move)
+        if score > best_score:
+            best_score = score
+            best_move = move
+    return best_move
+
+def piece_value(piece):
+    val = 1.0
+    # King bonus
+    if piece.is_king:
+        val += 1.5
+    # Promotion potential (distance to becoming king)
+    if piece.player == 'w':
+        val += 0.2 * (7 - piece.cy)
+    else:
+        val += 0.2 * piece.cy
+    # Mobility bonus: number of raw move options
+    options = len(piece.available_moves())
+    val += 0.1 * options
+    # Edge safety bonus
+    if piece.cx in (0, 7) or piece.cy in (0, 7):
+        val += 0.2
+    return val
+
+def is_threatened(piece, state):
+    y, x = piece.cy, piece.cx
+    bd = state.grid
+    for dy, dx in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        ay, ax = y + dy, x + dx
+        jy, jx = y - dy, x - dx
+        if 0 <= ay < 8 and 0 <= ax < 8 and 0 <= jy < 8 and 0 <= jx < 8:
+            neigh = bd[ay][ax]
+            if neigh and neigh.player != piece.player and bd[jy][jx] is None:
+                return True
+    return False
+
+def evaluate_state(state, player):
+    score = 0.0
+    center = {(3, 3), (3, 4), (4, 3), (4, 4)}
+    for row in state.grid:
+        for p in row:
+            if not p:
+                continue
+            val = piece_value(p)
+            # Center control
+            if (p.cy, p.cx) in center:
+                val += 0.3
+            # Threat penalty: if piece can be jumped next turn
+            if is_threatened(p, state):
+                val -= 0.5
+            # Sum up with sign
+            score += (1 if p.player == player else -1) * val
+    return score
+
+"""
+def minimax_search(game, state, depth=3, maximizing_player=True):
+    def minimax(state, depth, alpha, beta, maximizing_player, player):
+        if game.is_terminal(state) or depth == 0:
+            return evaluate_state(state, player)
 
         if maximizing_player:
             max_eval = float('-inf')
@@ -152,7 +187,7 @@ def minimax_search(game, state, depth=3, maximizing_player=True):
     best_score = float('-inf')
     best_move = None
     for move in game.actions(state):
-        score = minimax(game.result(state, move), depth, float('-inf'), float('inf'), maximizing_player)
+        score = minimax(game.result(state, move), depth, float('-inf'), float('inf'), maximizing_player, state.to_move)
         if score > best_score:
             best_score = score
             best_move = move
@@ -180,22 +215,18 @@ def piece_value(piece):
     if piece.is_king:
         val += 1.5
 
-    # Heuristic 2: Center control
-    if 2 <= piece.cy <= 5 and 2 <= piece.cx <= 5:
-        val += 0.3
-
-    # Heuristic 3: Promotion potential
+    # Heuristic 2: Promotion potential
     if piece.player == "w":
         val += 0.2 * (7 - piece.cy)  # closer to becoming king
     elif piece.player == "b":
         val += 0.2 * piece.cy
 
-    # Heuristic 4: Edge safety bonus
+    # Heuristic 3: Edge safety bonus
     if piece.cx == 0 or piece.cx == 7:
-        val += 0.2
+        val += 0.4
 
     return val
-
+"""
 
 def query_player(game, state):
     """Make a move by querying standard input."""
