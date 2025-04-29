@@ -31,25 +31,29 @@ def minimax_search(game, state, depth=3, maximizing_player=True):
             best_move = move
     return best_move
 
-def piece_value(piece):
+def piece_value(state, piece):
     val = 1.0
     # King bonus
     if piece.is_king:
-        val += 1.5
+        val += 0.5
+        
     # Promotion potential (distance to becoming king)
-    if piece.player == 'w':
-        val += 0.2 * (7 - piece.cy)
-    else:
-        val += 0.2 * piece.cy
+    if not piece.is_king:
+        if piece.player == state.players[0]:
+            val += 0.2 * (7 - piece.cy)
+        else:
+            val += 0.2 * piece.cy
+
     # Mobility bonus: number of raw move options
     options = len(piece.available_moves())
     val += 0.1 * options
+
     # Edge safety bonus
     if piece.cx in (0, 7) or piece.cy in (0, 7):
         val += 0.2
     return val
 
-def is_threatened(piece, state):
+def is_threatened(state, piece):
     y, x = piece.cy, piece.cx
     bd = state.grid
     for dy, dx in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
@@ -68,13 +72,15 @@ def evaluate_state(state, player):
         for p in row:
             if not p:
                 continue
-            val = piece_value(p)
+            val = piece_value(state, p)
             # Center control
             if (p.cy, p.cx) in center:
                 val += 0.3
             # Threat penalty: if piece can be jumped next turn
-            if is_threatened(p, state):
-                val -= 0.5
+            if is_threatened(state, p):
+                threat_cost = 1.0 + (0.5 if p.is_king else 0.0)
+                val += (-threat_cost if p.player == player else +threat_cost)
+
             # Sum up with sign
             score += (1 if p.player == player else -1) * val
     return score

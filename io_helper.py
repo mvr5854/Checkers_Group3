@@ -1,4 +1,3 @@
-import sys
 from enum import Enum
 
 def get_cell_mapping(is_reverse=False):
@@ -56,8 +55,7 @@ class IOHelper:
                 choice_num = len(self.options)
                 choice = int(input(f"Choice (0-{choice_num}): "))
                 if choice == 0:
-                    print("Exiting the program...")
-                    sys.exit(0)
+                    raise SystemExit(0) 
                 if 0 < choice <= choice_num:
                     return self.options[choice - 1]
                 else:
